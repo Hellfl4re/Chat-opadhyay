@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <h2>Welcome, {{ username }}!</h2>
+    <button onclick="window.location.href='/logout'">Logout</button>
+    <hr>
+    <div id="messages">
+        {% for msg in messages %}
+            {% if msg.content %}
+                <p><b>{{ msg.sender }}</b>: {{ msg.content }}</p>
+            {% elif msg.file_path %}
+                <p><b>{{ msg.sender }}</b> sent a file:</p>
+                {% if msg.file_path.endswith(('png', 'jpg', 'jpeg', 'gif')) %}
+                    <img src="{{ msg.file_path }}" width="200">
+                {% elif msg.file_path.endswith(('mp4')) %}
+                    <video width="300" controls>
+                        <source src="{{ msg.file_path }}" type="video/mp4">
+                    </video>
+                {% elif msg.file_path.endswith(('mp3', 'wav')) %}
+                    <audio controls>
+                        <source src="{{ msg.file_path }}" type="audio/mpeg">
+                    </audio>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <input type="text" id="message" placeholder="Type a message">
+    <button onclick="sendMessage()">Send</button>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <button type="submit">Upload File</button>
+    </form>
+
+    <script>
+        var socket = io();
+        var username = "{{ username }}";
+        
+        socket.emit("join", {room: "All", username: username});
+
+        function sendMessage() {
+            var message = document.getElementById("message").value;
+            socket.emit("message", {room: "All", username: username, message: message});
+            document.getElementById("message").value = "";
+        }
+
+        socket.on("message", function(msg) {
+            var messages = document.getElementById("messages");
+            var messageItem = document.createElement("p");
+            messageItem.textContent = msg;
+            messages.appendChild(messageItem);
+        });
+    </script>
+</body>
+</html>
